@@ -1,4 +1,5 @@
 import datetime
+import subprocess
 
 # DS3231 Register map
 REGISTERS=[None]*(0x12+1)
@@ -67,8 +68,6 @@ class DS3231:
         return ((val&0xF0)>>4)*10+(val&0x0F)
 
     def _int_to_twos_complement(self, val):
-        print('Val ', val)
-        print('bin ',bin(val))
         return ~(val)+1
 
     def _twos_complement_to_int(self, val):
@@ -86,7 +85,7 @@ class DS3231:
 
     def _encode(self, reg, val, key):
         raw_data=self.bus.read_byte_data(self.addr, reg)
-        new_data=(raw_data & ~REGISTERS[reg][key]["shift"]) | (val << REGISTERS[reg][key]["shift"])
+        new_data=(raw_data & ~REGISTERS[reg][key]["bitmask"]) | (val << REGISTERS[reg][key]["shift"])
         self.bus.write_byte_data(self.addr, reg, new_data)
 
     def get_seconds(self):
@@ -192,7 +191,7 @@ class DS3231:
         self._encode(0x0F, 0x0, "en32khz")
 
     def get_temperature(self):
-        msb=self._int_to_twos_complement(self._decode(0x11)["temp_msb"])
+        msb=self._twos_complement_to_int(self._decode(0x11)["temp_msb"])
         lsb=self._decode(0x12)["temp_lsb"]*0.25
         return msb+lsb
 
@@ -218,3 +217,14 @@ class DS3231:
     def set_system_clock_to_rtc(self):
         self.set_datetime(datetime.datetime.now())
 
+    def get_hour_mode(self):
+        return self._decode(0x02)["format"]
+
+    def enable_24_hour_mode(self):
+        self._encode(0x02, 0x0, "format")
+
+    def enable_12_hour_mode(self):
+        self._encode(0x02, 0x1, "format")
+
+    def set_system_clock_from_rtc(self):
+        return subprocess.call(["sudo", "date", "-s", self.get_datetime().ctime()])
