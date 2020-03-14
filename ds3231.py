@@ -140,7 +140,7 @@ class DS3231:
         self._encode(0x0E, 0x1, "bbsqw")
 
     def disable_bbsqw(self):
-        self._encode(0x0E, 0x1, "bbsqw")
+        self._encode(0x0E, 0x0, "bbsqw")
 
     def get_convert_temperature(self):
         self._decode(0x0E, "conv")
