@@ -202,7 +202,6 @@ class DS3231:
         date=self.get_date()
         mth=self.get_month()
         yr=self.get_year()
-        print(mins)
         return datetime.datetime(yr,mth,date,hrs,mins,secs)
 
     def set_datetime(self, dt):
