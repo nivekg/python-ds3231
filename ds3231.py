@@ -227,3 +227,7 @@ class DS3231:
 
     def set_system_clock_from_rtc(self):
         return subprocess.call(["sudo", "date", "-s", self.get_datetime().ctime()])
+
+    def timestamp(self):
+        dt = self.get_datetime()
+        return (dt - datetime.datetime(1970, 1, 1, 0, 0, 0)).total_seconds()
