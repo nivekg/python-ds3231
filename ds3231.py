@@ -110,6 +110,7 @@ class DS3231:
         return self._bcd_to_int(self._decode(0x03)["day"])
 
     def set_day(self,val):
+        print(val)
         self._encode(0x03, self._int_to_bcd(val), "day")
 
     def get_date(self):
@@ -236,96 +237,140 @@ class DS3231:
 if __name__ == "__main__":
     import smbus
     import argparse
+    import ds3231
 
-    parser = argparse.ArgumentParser(Description = "Utility used to interact with the DS3231 RTC from Maximum Integrated")
-    parser.add_argument(i2c_bus, help = "i2c bus that the DS3231 is connected too")
-    parser.add_argument("--get-seconds", store_action=True, help = "")
-    parser.add_argument("--set-seconds", type=int, help = "")
-    parser.add_argument("--get-minute", store_action=True, help = "")
-    parser.add_argument("--set-minute", type=int, help = "")
-    parser.add_argument("--get-hour", store_action=True, help = "")
-    parser.add_argument("--set-hour", type=int, help = "")
-    parser.add_argument("--get-day", store_action=True, help = "")
-    parser.add_argument("--set-day", type=int, help = "")
-    parser.add_argument("--get-date", store_action=True, help = "")
-    parser.add_argument("--set-date", type=int, help = "")
-    parser.add_argument("--get-month", store_action=True, help = "")
-    parser.add_argument("--set-month", type=int, help = "")
-    parser.add_argument("--get_year", store_action=True, help = "")
-    parser.add_argument("--set-year", type=int, help = "")
-    parser.add_argument("--enable-oscillator", store_action=True, help = "")
-    parser.add_argument("--disable-oscillator", store_action=True, help = "")
-    parser.add_argument("--enable-bbsqw", store_action=True, help = "")
-    parser.add_argument("--disable-bbsqw", store_action=True, help = "")
-    parser.add_argument("--begin-temperature-conversion", store_action=True, help = "")
-    parser.add_argument("--get-temperature-conversion-flag", store_action=True, help = "")
-    parser.add_argument("--get-temperature", store_action=True, help = "")
+    parser = argparse.ArgumentParser(description = "Utility used to interact with the DS3231 RTC from Maximum Integrated")
+    parser.add_argument("--i2c-bus", type=int, help = "i2c bus that the DS3231 is connected too")
+    parser.add_argument("--get-seconds", action="store_true", help = "Returns the seconds RTC timekeeping register")
+    parser.add_argument("--set-seconds", type=int, help = "Sets the seconds RTC timekeeping register")
+    parser.add_argument("--get-minutes", action="store_true", help = "Returns the minutes RTC timekeeping register")
+    parser.add_argument("--set-minutes", type=int, help = "Sets the minutes RTC timekeeping register")
+    parser.add_argument("--get-hours", action="store_true", help = "Returns the hours RTC timekeeping register")
+    parser.add_argument("--set-hours", type=int, help = "Sets the hours RTC timekeeping register")
+    parser.add_argument("--get-day", action="store_true", help = "Returns the day RTC timekeeping register")
+    parser.add_argument("--set-day", type=int, help = "Sets the day RTC timekeeping register. Sunday equals 1")
+    parser.add_argument("--get-date", action="store_true", help = "Returns the date RTC timekeeping register")
+    parser.add_argument("--set-date", type=int, help = "Sets the date RTC timekeeping register")
+    parser.add_argument("--get-month", action="store_true", help = "Returns the month RTC timekeeping register")
+    parser.add_argument("--set-month", type=int, help = "Sets the month RTC timekeeping register")
+    parser.add_argument("--get-year", action="store_true", help = "Returns the year RTC timekeeping register")
+    parser.add_argument("--set-year", type=int, help = "Sets the year RTC timekeeping register. Only the last two digits for the year [0-99]")
+    parser.add_argument("--set-datetime", type=str, help = "Sets the RTC timekeeping registers based on the supplied time format. eg. \"%H:%M:%S 12:30:15\"")
+    parser.add_argument("--get-ctime", action="store_true")
+    parser.add_argument("--enable-oscillator", action="store_true", help = "")
+    parser.add_argument("--disable-oscillator", action="store_true", help = "")
+    parser.add_argument("--enable-bbsqw", action="store_true", help = "")
+    parser.add_argument("--disable-bbsqw", action="store_true", help = "")
+    parser.add_argument("--begin-temperature-conversion", action="store_true", help = "")
+    parser.add_argument("--get-temperature-conversion-flag", action="store_true", help = "")
+    parser.add_argument("--get-temperature", action="store_true", help = "")
     parser.add_argument("--set-sqw-freq", type=int, help = "")
-    parser.add_argument("--get-oscillator-flag", store_action=True, help = "")
-    parser.add_argument("--clear-oscillator-flag", store_action=True, help = "")
-    parser.add_argument("--enable-alarm1-interrupt", store_action=True, help = "")
-    parser.add_argument("--disable-alarm1-interrupt", store_action=True, help = "")
-    parser.add_argument("--get-alarm1-flag", store_action=True, help = "")
-    parser.add_argument("--clear-alarm1-flag", store_action=True, help = "")
-    parser.add_argument("--enable-alarm2-interrupt", store_action=True, help = "")
-    parser.add_argument("--disable-alarm2-interrupt", store_action=True, help = "")
-    parser.add_argument("--get-alarm2-flag", store_action=True, help = "")
-    parser.add_argument("--clear-alarm2-flag", store_action=True, help = "")
-    parser.add_argument("--enable-32khz-output", store_action=True, help = "")
-    parser.add_argument("--disable-32khz-output", store_action=True, help = "")
-    parser.add_argument("--set-system-clock-to-rtc", store_action=True, help = "")
-    parser.add_argument("--get-hour-mode", store_action=True, help = "")
-    parser.add_argument("--enable-24-hour-mode", store_action=True, help = "")
-    parser.add_argument("--enable-12-hour-mode", store_action=True, help = "")
-    parser.add_argument("--set-system-clock-from-rtc", store_action=True, help = "")
-    parser.add_argument("--timestamp", store_action=True, help = "Return the DS3231 timekeeping registers as a unix timestamp")
+    parser.add_argument("--get-oscillator-flag", action="store_true", help = "")
+    parser.add_argument("--clear-oscillator-flag", action="store_true", help = "")
+    parser.add_argument("--enable-alarm1-interrupt", action="store_true", help = "")
+    parser.add_argument("--disable-alarm1-interrupt", action="store_true", help = "")
+    parser.add_argument("--get-alarm1-flag", action="store_true", help = "")
+    parser.add_argument("--clear-alarm1-flag", action="store_true", help = "")
+    parser.add_argument("--enable-alarm2-interrupt", action="store_true", help = "")
+    parser.add_argument("--disable-alarm2-interrupt", action="store_true", help = "")
+    parser.add_argument("--get-alarm2-flag", action="store_true", help = "")
+    parser.add_argument("--clear-alarm2-flag", action="store_true", help = "")
+    parser.add_argument("--enable-32khz-output", action="store_true", help = "")
+    parser.add_argument("--disable-32khz-output", action="store_true", help = "")
+    parser.add_argument("--set-system-clock-to-rtc", action="store_true", help = "")
+    parser.add_argument("--get-hour-mode", action="store_true", help = "")
+    parser.add_argument("--enable-24-hour-mode", action="store_true", help = "")
+    parser.add_argument("--enable-12-hour-mode", action="store_true", help = "")
+    parser.add_argument("--set-system-clock-from-rtc", action="store_true", help = "")
+    parser.add_argument("--timestamp", action="store_true", help = "Return the DS3231 timekeeping registers as a unix timestamp")
     args = parser.parse_args()
 
-    bus = smbus.SMBus(args.i2c_bus)
-    rtc = ds3231.DS3231(bus)
+    rtc = None
 
     try:
+        if args.i2c_bus != None:
+            bus = smbus.SMBus(args.i2c_bus)
+            rtc = ds3231.DS3231(bus)
+        else:
+            print("Please specify the i2c bus the RTC is connected too.")
+            exit(1)
+
         if args.get_seconds:
             print(rtc.get_seconds())
 
         if args.set_seconds != None:
-            print(rtc.set_seconds(args.set_seconds))
+            if args.set_seconds >=0 and args.set_seconds <= 60:
+                rtc.set_seconds(args.set_seconds)
+            else:
+                print("Seconds need to be in the range 0 to 60")
+                exit(1)
 
         if args.get_minutes:
             print(rtc.get_minutes())
 
         if args.set_minutes != None:
-            print(rtc.set_minutes(args.set_minutess))
+            if args.set_minutes >= 0 and args.set_minutes <= 60:
+                rtc.set_minutes(args.set_minutes)
+            else:
+                print("Minutes need to be in the range 0 to 60")
+                exit(1)
 
         if args.get_hours:
             print(rtc.get_hours())
 
         if args.set_hours != None:
-            print(rtc.set_hours(args.set_hours))
+            if args.set_hours >= 0 and args.set_hours <= 24:
+                rtc.set_hours(args.set_hours)
+            else:
+                print("Hours need to be in the range 0 to 24")
+                exit(1)
 
         if args.get_day:
             print(rtc.get_day())
 
         if args.set_day != None:
-            print(rtc.set_day(args.set_day))
+            if args.set_day >= 1 and args.set_day <= 7:
+                rtc.set_day(args.set_day)
+            else:
+                print("Day need to be in the range 1 to 7. Sunday starts at 1")
+                exit(1)
 
         if args.get_date:
             print(rtc.get_date())
 
         if args.set_date != None:
-            print(rtc.set_date(args.set_date))
+            if args.set_date >= 1 and args.set_date <= 31:
+                rtc.set_date(args.set_date)
+            else:
+                print("Date needs to be in the range 1 to 31")
+                exit(1)
 
         if args.get_month:
             print(rtc.get_month())
 
         if args.set_month != None:
-            print(rtc.set_month(args.set_month))
+            if args.set_month >= 1 and args.set_month <= 12:
+                rtc.set_month(args.set_month)
+            else:
+                print("Month needs to be in the range 1 to 12")
+                exit(1)
 
         if args.get_year:
             print(rtc.get_year())
 
         if args.set_year != None:
-            print(rtc.set_year(args.set_year))
+            if args.set_year >= 0 and args.set_year <= 99:
+                rtc.set_year(args.set_year)
+            else:
+                print("Year needs to be in the range 0 to 99. Only the last two digits are required")
+                exit(1)
+
+        if args.set_datetime != None:
+            format, date = args.set_datetime.split("; ")
+            rtc.set_datetime(datetime.datetime.strptime(date, format))
+
+        if args.get_ctime:
+           print(rtc.get_datetime().ctime())
 
         if args.enable_oscillator:
             rtc.enable_oscilator()
@@ -339,7 +384,7 @@ if __name__ == "__main__":
         if args.disable_bbsqw:
             rtc.disable_bbsqw()
 
-        if args.begin-temperature-conversion:
+        if args.begin_temperature_conversion:
             print(rtc.begin_temperature_conversion())
 
         if args.get_temperature_conversion_flag:
@@ -348,8 +393,9 @@ if __name__ == "__main__":
         if args.get_temperature:
             print(rtc.get_temperature())
 
-        if args.set_sqw_freq != None and args.set_sqw_freq in [0, 1, 2, 3]:
-            rtc.set_sqw_freq(args.set_sqw_freq)
+        if args.set_sqw_freq != None:
+            if args.set_sqw_freq in [0, 1, 2, 3]:
+                rtc.set_sqw_freq(args.set_sqw_freq)
 
         if args.get_oscillator_flag:
             print(rtc.get_oscillator_flag())
@@ -357,28 +403,28 @@ if __name__ == "__main__":
         if args.clear_oscillator_flag:
             rtc.clear_oscillator_flag()
 
-        if arg.enable_alarm1_interrupt:
+        if args.enable_alarm1_interrupt:
             rtc.enable_alarm1_interrupt()
 
-        if arg.disable_alarm1_interrupt:
+        if args.disable_alarm1_interrupt:
             rtc.disable_alarm1_interrupt()
 
-        if arg.get_alarm1_flag:
+        if args.get_alarm1_flag:
             print(rtc.get_alarm1_flag())
 
-        if arg.clear_alarm1_flag:
+        if args.clear_alarm1_flag:
             rtc.clear_alarm1_flag()
 
-        if arg.enable_alarm2_interrupt:
+        if args.enable_alarm2_interrupt:
             rtc.enable_alarm2_interrupt()
 
-        if arg.disable_alarm2_interrupt:
+        if args.disable_alarm2_interrupt:
             rtc.disable_alarm2_interrupt()
 
-        if arg.get_alarm2_flag:
+        if args.get_alarm2_flag:
             print(rtc.get_alarm2_flag())
 
-        if arg.clear_alarm2_flag:
+        if args.clear_alarm2_flag:
             rtc.clear_alarm2_flag()
 
         if args.enable_32khz_output:
@@ -400,9 +446,12 @@ if __name__ == "__main__":
             rtc.enable_12_hour_mode()
 
         if args.set_system_clock_from_rtc:
+            print("set_system_clock_from_rtc")
             rtc.set_system_clock_from_rtc()
 
         if args.timestamp:
-            print(rtc.timestamp())
-    except:
+            print(int(rtc.timestamp()))
+
+    except Exception as e:
+        print(e.message)
         exit(1)
