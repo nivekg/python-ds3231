@@ -227,7 +227,7 @@ class DS3231:
         self._encode(0x02, 0x1, "format")
 
     def set_system_clock_from_rtc(self):
-        subprocess.check_output(["sudo", "date", "-s", self.get_datetime().ctime()])
+        return subprocess.call(["sudo", "date", "-s", self.get_datetime().ctime()])
 
     def timestamp(self):
         dt = self.get_datetime()
@@ -446,6 +446,7 @@ if __name__ == "__main__":
             rtc.enable_12_hour_mode()
 
         if args.set_system_clock_from_rtc:
+            print("set_system_clock_from_rtc")
             rtc.set_system_clock_from_rtc()
 
         if args.timestamp:
