@@ -1,5 +1,6 @@
 import datetime
 import subprocess
+import os
 
 # DS3231 Register map
 REGISTERS=[None]*(0x12+1)
@@ -227,7 +228,11 @@ class DS3231:
         self._encode(0x02, 0x1, "format")
 
     def set_system_clock_from_rtc(self):
-        return subprocess.call(["sudo", "date", "-s", self.get_datetime().ctime()])
+        devnull = open(os.devnull, 'w')
+        success = subprocess.call(["sudo", "date", "-s", self.get_datetime().ctime()], stdout=devnull, stderr=devnull)
+        devnull.close()
+        return success
+      
 
     def timestamp(self):
         dt = self.get_datetime()
@@ -446,7 +451,6 @@ if __name__ == "__main__":
             rtc.enable_12_hour_mode()
 
         if args.set_system_clock_from_rtc:
-            print("set_system_clock_from_rtc")
             rtc.set_system_clock_from_rtc()
 
         if args.timestamp:
